@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Platformer Designer</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: monospace;
+      background: #222;
+      color: white;
+      overflow: hidden;
+    }
+    #gameCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: #111;
+      z-index: 0;
+    }
+    #inventory {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.8);
+      padding: 10px;
+      border: 2px solid #444;
+      display: none;
+      z-index: 2;
+    }
+    .inv-item {
+      background: #333;
+      border: 2px solid #666;
+      padding: 5px 10px;
+      margin: 5px;
+      cursor: pointer;
+      display: inline-block;
+    }
+    .inv-item:hover {
+      background: #444;
+    }
+    #levelButtons {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 3;
+    }
+    .level-btn {
+      margin: 2px;
+      padding: 5px 10px;
+      background: #333;
+      color: white;
+      border: 1px solid #555;
+      cursor: pointer;
+    }
+    #loadMenu {
+      display: none;
+      position: absolute;
+      left: 150px;
+      bottom: 10px;
+      background: rgba(0,0,0,0.8);
+      padding: 10px;
+      border: 2px solid #444;
+      z-index: 2;
+    }
+    #loadMenu .inv-item {
+      margin: 2px 0;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="1280" height="720"></canvas>
+
+  <div id="inventory">
+    <div class="inv-item" onclick="selectTool('platform')">Platform</div>
+    <div class="inv-item" onclick="selectTool('spike')">Spike</div>
+    <div class="inv-item" onclick="selectTool('lava')">Lava</div>
+    <div class="inv-item" onclick="selectTool('spawn')">Spawn</div>
+    <div class="inv-item" onclick="selectTool('nextlevel')">Next Level</div>
+    <div class="inv-item" onclick="selectTool('delete')">Delete</div>
+    <div class="inv-item" onclick="togglePlayMode()">Play</div>
+    <div class="inv-item" onclick="saveLevel()">Save</div>
+    <div class="inv-item" onclick="loadLevel()">Load</div>
+  </div>
+
+  <div id="loadMenu">
+    <strong>Saved Levels (hold to delete):</strong>
+    <div id="savedList" style="margin-top:5px;"></div>
+  </div>
+
+  <div id="levelButtons"></div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const inventory = document.getElementById('inventory');
+    inventory.style.display = 'block';
+
+    let tool = null;
+    let isPlaying = false;
+    let mouseX = 0, mouseY = 0;
+    let player = null;
+    let isMouseDown = false;
+
+    const levels = [];
+    for (let i = 0; i < 10; i++) {
+      levels.push({
+        platforms: [],
+        spikes: [],
+        lavas: [],
+        nextBlocks: [],
+        spawnPoint: { x: 100, y: 600 }
+      });
+    }
+    let currentLevel = 0;
+
+    function createLevelButtons() {
+      const levelBtns = document.getElementById('levelButtons');
+      for (let i = 0; i < 10; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = `Level ${i + 1}`;
+        btn.className = 'level-btn';
+        btn.onclick = () => {
+          currentLevel = i;
+          render();
+        };
+        levelBtns.appendChild(btn);
+      }
+    }
+    createLevelButtons();
+
+    document.addEventListener('keydown', e => {
+      if (e.key.toLowerCase() === 'e') {
+        inventory.style.display = inventory.style.display === 'none' ? 'block' : 'none';
+      }
+    });
+
+    function selectTool(t) {
+      tool = t;
+    }
+
+    function togglePlayMode() {
+      isPlaying = !isPlaying;
+      document.getElementById('loadMenu').style.display = 'none';
+      if (isPlaying) resetPlayer();
+    }
+
+    canvas.addEventListener('mousemove', e => {
+      const rect = canvas.getBoundingClientRect();
+      mouseX = Math.floor((e.clientX - rect.left) / 20) * 20;
+      mouseY = Math.floor((e.clientY - rect.top) / 20) * 20;
+
+      if (isMouseDown && !isPlaying) {
+        placeOrDeleteBlock();
+      }
+    });
+
+    canvas.addEventListener('mousedown', () => {
+      isMouseDown = true;
+      if (!isPlaying) placeOrDeleteBlock();
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      isMouseDown = false;
+    });
+
+    function placeOrDeleteBlock() {
+      const level = levels[currentLevel];
+      if (tool === 'platform') level.platforms.push({ x: mouseX, y: mouseY, width: 100, height: 20 });
+      if (tool === 'spike') level.spikes.push({ x: mouseX, y: mouseY, width: 30, height: 30 });
+      if (tool === 'lava') level.lavas.push({ x: mouseX, y: mouseY, width: 100, height: 20 });
+      if (tool === 'spawn') level.spawnPoint = { x: mouseX, y: mouseY };
+      if (tool === 'nextlevel') level.nextBlocks.push({ x: mouseX, y: mouseY, width: 40, height: 40 });
+      if (tool === 'delete') {
+        ['platforms', 'spikes', 'lavas', 'nextBlocks'].forEach(type => {
+          level[type] = level[type].filter(obj => !(mouseX >= obj.x && mouseX <= obj.x + obj.width && mouseY >= obj.y && mouseY <= obj.y + obj.height));
+        });
+      }
+      render();
+    }
+
+    function drawSpike(s) {
+      ctx.fillStyle = 'orangered';
+      ctx.beginPath();
+      ctx.moveTo(s.x + s.width / 2, s.y);
+      ctx.lineTo(s.x, s.y + s.height);
+      ctx.lineTo(s.x + s.width, s.y + s.height);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function resetPlayer() {
+      const spawn = levels[currentLevel].spawnPoint;
+      player = { x: spawn.x, y: spawn.y, width: 30, height: 30, vx: 0, vy: 0, grounded: false };
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const level = levels[currentLevel];
+
+      level.platforms.forEach(p => {
+        ctx.fillStyle = '#228B22';
+        ctx.fillRect(p.x, p.y, p.width, p.height);
+      });
+
+      level.spikes.forEach(drawSpike);
+
+      level.lavas.forEach(l => {
+        ctx.fillStyle = 'red';
+        ctx.fillRect(l.x, l.y, l.width, l.height);
+      });
+
+      level.nextBlocks.forEach(n => {
+        ctx.fillStyle = 'purple';
+        ctx.fillRect(n.x, n.y, n.width, n.height);
+      });
+
+      const spawn = level.spawnPoint;
+      ctx.fillStyle = '#FFD700';
+      ctx.fillRect(spawn.x, spawn.y, 10, 10);
+
+      if (!isPlaying) {
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        if (tool === 'platform') ctx.strokeRect(mouseX, mouseY, 100, 20);
+        if (tool === 'spike') {
+          ctx.beginPath();
+          ctx.moveTo(mouseX + 15, mouseY);
+          ctx.lineTo(mouseX, mouseY + 30);
+          ctx.lineTo(mouseX + 30, mouseY + 30);
+          ctx.closePath();
+          ctx.stroke();
+        }
+        if (tool === 'lava') ctx.strokeRect(mouseX, mouseY, 100, 20);
+        if (tool === 'spawn') ctx.strokeRect(mouseX, mouseY, 10, 10);
+        if (tool === 'nextlevel') ctx.strokeRect(mouseX, mouseY, 40, 40);
+      }
+
+      if (isPlaying && player) {
+        ctx.fillStyle = 'cyan';
+        ctx.fillRect(player.x, player.y, player.width, player.height);
+      }
+    }
+
+    function update() {
+      if (!isPlaying || !player) return;
+
+      player.vy += 0.5;
+      player.x += player.vx;
+      player.y += player.vy;
+      player.grounded = false;
+
+      const level = levels[currentLevel];
+
+      for (const p of level.platforms) {
+        if (player.x < p.x + p.width && player.x + player.width > p.x) {
+          if (player.y + player.height > p.y && player.y + player.height <= p.y + player.vy) {
+            player.y = p.y - player.height;
+            player.vy = 0;
+            player.grounded = true;
+          }
+        }
+
+        if (player.x < p.x + p.width && player.x + player.width > p.x) {
+          if (player.y < p.y + p.height && player.y + player.height > p.y) {
+            if (player.vy > 0) {
+              player.y = p.y - player.height;
+              player.vy = 0;
+            }
+            if (player.vy < 0) {
+              player.y = p.y + p.height;
+              player.vy = 0;
+            }
+          }
+        }
+      }
+
+      [...level.spikes, ...level.lavas].forEach(d => {
+        if (player.x < d.x + d.width && player.x + player.width > d.x && player.y < d.y + d.height && player.y + player.height > d.y) {
+          resetPlayer();
+        }
+      });
+
+      for (const n of level.nextBlocks) {
+        if (player.x < n.x + n.width && player.x + player.width > n.x && player.y < n.y + n.height && player.y + player.height > n.y) {
+          currentLevel = Math.min(currentLevel + 1, levels.length - 1);
+          resetPlayer();
+        }
+      }
+
+      if (player.y > canvas.height) {
+        resetPlayer();
+      }
+    }
+
+    document.addEventListener('keydown', e => {
+      if (!isPlaying || !player) return;
+      if (e.key === 'a') player.vx = -3;
+      if (e.key === 'd') player.vx = 3;
+      if (e.key === 'w' && player.grounded) player.vy = -10;
+    });
+
+    document.addEventListener('keyup', e => {
+      if (!isPlaying || !player) return;
+      if (e.key === 'a' || e.key === 'd') player.vx = 0;
+    });
+
+    function saveLevel() {
+      const name = prompt("Enter a name to save this level set:");
+      if (!name) return;
+      localStorage.setItem(`platformerLevels_${name}`, JSON.stringify(levels));
+      alert(`Levels saved as "${name}"`);
+      updateSavedList();
+    }
+
+    function loadLevel() {
+      const menu = document.getElementById('loadMenu');
+      menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+      updateSavedList();
+    }
+
+    function updateSavedList() {
+      const savedList = document.getElementById('savedList');
+      savedList.innerHTML = '';
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('platformerLevels_')) {
+          const name = key.replace('platformerLevels_', '');
+          const item = document.createElement('div');
+          item.textContent = name;
+          item.className = 'inv-item';
+
+          let holdTimer;
+
+          item.onmousedown = () => {
+            holdTimer = setTimeout(() => {
+              const confirmed = confirm(`Delete saved level "${name}"?`);
+              if (confirmed) {
+                localStorage.removeItem(key);
+                updateSavedList();
+              }
+            }, 1500);
+          };
+
+          item.onmouseup = () => clearTimeout(holdTimer);
+          item.onmouseleave = () => clearTimeout(holdTimer);
+
+          item.onclick = () => {
+            const data = localStorage.getItem(key);
+            if (data) {
+              const parsedData = JSON.parse(data);
+              levels.splice(0, levels.length, ...parsedData);
+              render();
+              alert(`Level set "${name}" loaded!`);
+            }
+          };
+
+          savedList.appendChild(item);
+        }
+      }
+    }
+
+    setInterval(() => {
+      update();
+      render();
+    }, 1000 / 60);
+  </script>
+</body>
+</html>  
