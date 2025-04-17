@@ -54,6 +54,14 @@
       border: 1px solid #555;
       cursor: pointer;
     }
+    .create-level-btn {
+      margin: 2px;
+      padding: 5px 10px;
+      background: #006400;
+      color: white;
+      border: 1px solid #555;
+      cursor: pointer;
+    }
     #loadMenu {
       display: none;
       position: absolute;
@@ -110,6 +118,9 @@
     let isMouseDown = false;
 
     let levels = [];
+    let currentLevel = 0;
+
+    // Initialize Level 1
     levels.push({
       platforms: [],
       spikes: [],
@@ -117,7 +128,6 @@
       nextBlocks: [],
       spawnPoint: { x: 100, y: 600 }
     });
-    let currentLevel = 0;
 
     function createLevelButtons() {
       const levelBtns = document.getElementById('levelButtons');
@@ -131,8 +141,18 @@
           render();
         };
         levelBtns.appendChild(btn);
+
+        if (i === 0) {
+          // Add the "Create Level" button next to Level 1
+          const createBtn = document.createElement('button');
+          createBtn.textContent = 'Create Level';
+          createBtn.className = 'create-level-btn';
+          createBtn.onclick = () => createLevel(i);
+          levelBtns.appendChild(createBtn);
+        }
       });
     }
+
     createLevelButtons();
 
     document.addEventListener('keydown', e => {
@@ -343,21 +363,29 @@
             if (data) {
               const parsedData = JSON.parse(data);
               levels = parsedData;
-              currentLevel = 0; // Reset to first level after loading
+              currentLevel = 0;
               render();
-              alert(`Level set "${name}" loaded!`);
             }
           };
-
           savedList.appendChild(item);
         }
       }
     }
 
-    setInterval(() => {
+    function createLevel(fromIndex) {
+      const newLevel = JSON.parse(JSON.stringify(levels[fromIndex]));
+      levels.push(newLevel);
+      createLevelButtons();
+      render();
+    }
+
+    function run() {
       update();
       render();
-    }, 1000 / 60);
+      requestAnimationFrame(run);
+    }
+
+    run();
   </script>
 </body>
 </html>
