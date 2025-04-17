@@ -169,6 +169,11 @@
       if (e.key === 'a') keys.left = false;
       if (e.key === 'd') keys.right = false;
       if (e.key === 'w') keys.up = false;
+
+      // Reset horizontal velocity when keys are released
+      if (!keys.left && !keys.right) {
+        player.vx = 0;  // Stop horizontal movement when no keys are pressed
+      }
     });
 
     function selectTool(t) {
