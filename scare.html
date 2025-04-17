@@ -1,1 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Welcome to the Dark</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: black;
+      overflow: hidden;
+      color: red;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    .floating-text {
+      position: absolute;
+      color: red;
+      font-size: 2rem;
+      animation: float 10s infinite;
+      white-space: nowrap;
+    }
+
+    @keyframes float {
+      0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+      50% { opacity: 1; }
+      100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+    }
+
+    .flash {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: white;
+      opacity: 0;
+      pointer-events: none;
+      animation: flash 0.05s infinite;
+    }
+
+    @keyframes flash {
+      0% { opacity: 0; }
+      50% { opacity: 0.9; }
+      100% { opacity: 0; }
+    }
+
+    .bloody-flicker {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgb(100, 0, 0);
+      opacity: 0.3;
+      pointer-events: none;
+      animation: bloodyFlicker 0.1s infinite alternate;
+    }
+
+    @keyframes bloodyFlicker {
+      0% { background-color: rgb(100, 0, 0); opacity: 0.3; }
+      25% { background-color: rgb(255, 0, 0); opacity: 0.7; }
+      50% { background-color: rgb(150, 0, 0); opacity: 0.4; }
+      75% { background-color: rgb(200, 0, 0); opacity: 0.5; }
+      100% { background-color: rgb(100, 0, 0); opacity: 0.3; }
+    }
+
+    .request-popup {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 0, 0, 0.8);
+      padding: 10px 20px;
+      border: 2px solid red;
+      animation: flicker 1s infinite alternate;
+    }
+
+    @keyframes flicker {
+      from { opacity: 1; }
+      to { opacity: 0.5; }
+    }
+
+    .broken-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: url('https://www.w3schools.com/w3images/w3lynx_200.png') repeat;
+      background-size: contain;
+      z-index: 9999;
+      display: none;
+    }
+
+    .blue-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: #0000FF;
+      color: white;
+      font-size: 24px;
+      display: none;
+      text-align: center;
+      padding-top: 20%;
+      z-index: 10000;
+    }
+
+    #blue-loading {
+      margin-top: 20px;
+      font-size: 20px;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+<div class="flash"></div>
+<div class="bloody-flicker"></div>
+<div class="request-popup">Requesting access to your face and voice...</div>
+
+<div class="broken-screen"></div>
+
+<div class="blue-screen">
+  <h1>STOP: SYSTEM ERROR</h1>
+  <p>Your computer has encountered a serious error.</p>
+  <p>Rebooting in progress...</p>
+  <p id="blue-loading">Loading: 0%</p>
+</div>
+
+<script>
+  const scaryMessages = [
+    "DO YOU HEAR THAT?", "WHO'S BEHIND YOU?", "YOU SHOULDN'T BE HERE.",
+    "RUN WHILE YOU CAN.", "IT'S TOO LATE NOW.", "THEY'RE WATCHING.",
+    "YOU'VE BEEN MARKED.", "WE SEE EVERYTHING.", "NEVER ALONE.",
+    "WHY DID YOU CLICK?", "LOOK OUT THE WINDOW.", "DON'T MOVE.",
+    "SOMETHING IS WRONG.", "SHHH... LISTEN.", "ARE YOU SCARED YET?",
+    "JUST A LITTLE LONGER...", "NOTHING IS REAL.", "EVERYTHING IS GLITCHING.",
+    "IT KNOWS YOUR NAME.", "TURN AROUND."
+  ];
+
+  function createFloatingText() {
+    const text = document.createElement('div');
+    text.classList.add('floating-text');
+    text.innerText = scaryMessages[Math.floor(Math.random() * scaryMessages.length)];
+    text.style.left = Math.random() * window.innerWidth + 'px';
+    text.style.top = Math.random() * window.innerHeight + 'px';
+    text.style.fontSize = (Math.random() * 20 + 16) + 'px';
+    document.body.appendChild(text);
+    setTimeout(() => text.remove(), 10000);
+  }
+
+  setInterval(createFloatingText, 500);
+
+  const audio = new Audio('https://www.fesliyanstudios.com/play-mp3/387');
+  audio.loop = true;
+  audio.volume = 0.3;
+  audio.play().catch(() => {
+    console.log("User hasn't interacted yet, can't autoplay sound.");
+  });
+
+  const flash = document.querySelector('.flash');
+  setInterval(() => {
+    flash.style.opacity = Math.random() < 0.1 ? '0.9' : '0';
+  }, 50);
+
+  setTimeout(() => {
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen();
+    }
+
+    const brokenScreen = document.querySelector('.broken-screen');
+    brokenScreen.style.display = 'block';
+
+    setTimeout(() => {
+      brokenScreen.style.display = 'none';
+      const blueScreen = document.querySelector('.blue-screen');
+      const loadingText = document.getElementById('blue-loading');
+      blueScreen.style.display = 'block';
+
+      // Simulate loading on the blue screen
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 2;
+        loadingText.textContent = `Loading: ${progress}%`;
+
+        if (progress >= 100) {
+          clearInterval(interval);
+          setTimeout(() => {
+            window.location.reload(); // Simulate reboot
+          }, 1000);
+        }
+      }, 100);
+    }, 3000);
+  }, 10000);
+</script>
+
+</body>
+</html>
 
