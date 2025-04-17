@@ -68,6 +68,20 @@
       margin: 2px 0;
       display: block;
     }
+    #feedbackButton {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background-color: #444;
+      color: white;
+      border: 2px solid #666;
+      padding: 10px 15px;
+      cursor: pointer;
+      z-index: 2;
+    }
+    #feedbackButton:hover {
+      background-color: #555;
+    }
   </style>
 </head>
 <body>
@@ -81,7 +95,7 @@
   <div class="inv-item" onclick="selectTool('nextlevel')">Next Level</div>
   <div class="inv-item" onclick="selectTool('prevlevel')">Previous Level</div>
   <div class="inv-item" onclick="selectTool('delete')">Delete</div>
-  <div class="inv-item" onclick="selectTool('enemy')">Enemy</div> <!-- New Enemy Tool -->
+  <div class="inv-item" onclick="selectTool('enemy')">Enemy</div>
   <div class="inv-item" onclick="togglePlayMode()">Play</div>
   <div class="inv-item" onclick="toggleStopMode()">Stop</div>
   <div class="inv-item" onclick="saveLevel()">Save</div>
@@ -94,6 +108,9 @@
 </div>
 
 <div id="levelButtons"></div>
+
+<!-- Feedback Button -->
+<button id="feedbackButton" onclick="window.location.href='feedback.html'">Feedback</button>
 
 <script>
   const currentUrl = window.location.href;
@@ -316,71 +333,15 @@
 
     player.x += player.vx;
     player.y += player.vy;
-
-    // Check for ground collision (simplified)
-    if (player.y + player.height >= canvas.height) {
-      player.y = canvas.height - player.height;
-      player.vy = 0;
-      player.grounded = true;
-    } else {
-      player.grounded = false;
-    }
-
-    // Enemy movement
-    levels[currentLevel].enemies.forEach(enemy => {
-      if (player.x < enemy.x) enemy.x -= enemy.speed;
-      if (player.x > enemy.x) enemy.x += enemy.speed;
-      if (player.y < enemy.y) enemy.y -= enemy.speed;
-      if (player.y > enemy.y) enemy.y += enemy.speed;
-
-      // Collision with enemy
-      if (player.x < enemy.x + enemy.width &&
-        player.x + player.width > enemy.x &&
-        player.y < enemy.y + enemy.height &&
-        player.y + player.height > enemy.y) {
-        resetPlayer(); // Reset player when hit by enemy
-      }
-    });
+    render();
   }
 
   function drawPreview() {
-    if (tool === 'platform') {
-      ctx.fillStyle = '#228B22';
-      ctx.fillRect(mouseX, mouseY, 100, 20);
-      ctx.strokeStyle = 'white';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(mouseX, mouseY, 100, 20); // Outline
-    }
-    if (tool === 'spike') {
-      ctx.fillStyle = '#FF4500';
-      ctx.fillRect(mouseX, mouseY, 30, 30);
-      ctx.strokeStyle = 'white';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(mouseX, mouseY, 30, 30); // Outline
-    }
-    if (tool === 'lava') {
-      ctx.fillStyle = 'red';
-      ctx.fillRect(mouseX, mouseY, 100, 20);
-      ctx.strokeStyle = 'white';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(mouseX, mouseY, 100, 20); // Outline
-    }
-    if (tool === 'enemy') {
-      ctx.fillStyle = 'orange';
-      ctx.fillRect(mouseX, mouseY, 30, 30);
-      ctx.strokeStyle = 'white';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(mouseX, mouseY, 30, 30); // Outline
-    }
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.fillRect(mouseX, mouseY, 20, 20);
   }
 
-  function gameLoop() {
-    update();
-    render();
-    requestAnimationFrame(gameLoop);
-  }
-
-  gameLoop();
+  setInterval(update, 1000 / 60);
 </script>
 </body>
 </html>
