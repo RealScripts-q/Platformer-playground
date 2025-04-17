@@ -238,6 +238,9 @@
   function drawEnemy(e) {
     ctx.fillStyle = 'orange';
     ctx.fillRect(e.x, e.y, e.width, e.height);
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(e.x, e.y, e.width, e.height); // Outline
   }
 
   function resetPlayer() {
@@ -252,6 +255,9 @@
     level.platforms.forEach(p => {
       ctx.fillStyle = '#228B22';
       ctx.fillRect(p.x, p.y, p.width, p.height);
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(p.x, p.y, p.width, p.height); // Outline
     });
 
     level.spikes.forEach(drawSpike);
@@ -259,23 +265,35 @@
     level.lavas.forEach(l => {
       ctx.fillStyle = 'red';
       ctx.fillRect(l.x, l.y, l.width, l.height);
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(l.x, l.y, l.width, l.height); // Outline
     });
 
     if (level.showTransitions) {
       level.nextBlocks.forEach(n => {
         ctx.fillStyle = 'purple';
         ctx.fillRect(n.x, n.y, n.width, n.height);
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(n.x, n.y, n.width, n.height); // Outline
       });
 
       level.prevBlocks.forEach(p => {
         ctx.fillStyle = 'blue';
         ctx.fillRect(p.x, p.y, p.width, p.height);
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(p.x, p.y, p.width, p.height); // Outline
       });
     }
 
     if (!level.spawnPoint.hidden) {
       ctx.fillStyle = '#FFD700';
       ctx.fillRect(level.spawnPoint.x, level.spawnPoint.y, 10, 10);
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(level.spawnPoint.x, level.spawnPoint.y, 10, 10); // Outline
     }
 
     if (isPlaying && player) {
@@ -283,7 +301,7 @@
       ctx.fillRect(player.x, player.y, player.width, player.height);
     }
 
-    level.enemies.forEach(drawEnemy); // Draw enemies
+    level.enemies.forEach(drawEnemy); // Draw enemies with outline
 
     drawPreview();
   }
@@ -294,89 +312,65 @@
     player.vy += 0.5;
     if (keys.left) player.vx = -5;
     if (keys.right) player.vx = 5;
+    if (!keys.left && !keys.right) player.vx = 0;
 
     player.x += player.vx;
     player.y += player.vy;
-    player.grounded = false;
 
-    const level = levels[currentLevel];
-
-    for (const p of level.platforms) {
-      if (player.x < p.x + p.width && player.x + player.width > p.x && player.y + player.height > p.y && player.y + player.height <= p.y + player.vy) {
-        player.y = p.y - player.height;
-        player.vy = 0;
-        player.grounded = true;
-      }
+    // Check for ground collision (simplified)
+    if (player.y + player.height >= canvas.height) {
+      player.y = canvas.height - player.height;
+      player.vy = 0;
+      player.grounded = true;
+    } else {
+      player.grounded = false;
     }
 
-    [...level.spikes, ...level.lavas].forEach(d => {
-      if (player.x < d.x + d.width && player.x + player.width > d.x && player.y < d.y + d.height && player.y + player.height > d.y) {
-        resetPlayer();
+    // Enemy movement
+    levels[currentLevel].enemies.forEach(enemy => {
+      if (player.x < enemy.x) enemy.x -= enemy.speed;
+      if (player.x > enemy.x) enemy.x += enemy.speed;
+      if (player.y < enemy.y) enemy.y -= enemy.speed;
+      if (player.y > enemy.y) enemy.y += enemy.speed;
+
+      // Collision with enemy
+      if (player.x < enemy.x + enemy.width &&
+        player.x + player.width > enemy.x &&
+        player.y < enemy.y + enemy.height &&
+        player.y + player.height > enemy.y) {
+        resetPlayer(); // Reset player when hit by enemy
       }
     });
-
-    level.nextBlocks.forEach(n => {
-      if (player.x < n.x + n.width && player.x + player.width > n.x && player.y < n.y + n.height && player.y + player.height > n.y) {
-        currentLevel = Math.min(currentLevel + 1, levels.length - 1);
-        resetPlayer();
-      }
-    });
-
-    level.prevBlocks.forEach(p => {
-      if (player.x < p.x + p.width && player.x + player.width > p.x && player.y < p.y + p.height && player.y + player.height > p.y) {
-        currentLevel = Math.max(currentLevel - 1, 0);
-        resetPlayer();
-      }
-    });
-
-    level.enemies.forEach(enemy => {
-      // Enemy movement towards player
-      if (player.x > enemy.x) {
-        enemy.x += enemy.speed;
-      } else {
-        enemy.x -= enemy.speed;
-      }
-
-      // Check for collision with player
-      if (player.x < enemy.x + enemy.width && player.x + player.width > enemy.x && player.y < enemy.y + enemy.height && player.y + player.height > enemy.y) {
-        resetPlayer();
-      }
-    });
-
-    if (player.y > canvas.height) resetPlayer();
-  }
-
-  function saveLevel() {
-    const levelData = JSON.stringify(levels);
-    localStorage.setItem('savedLevels', levelData);
-  }
-
-  function loadLevel() {
-    const levelData = localStorage.getItem('savedLevels');
-    if (levelData) {
-      levels.length = 0;
-      levels.push(...JSON.parse(levelData));
-      createLevelButtons();
-      render();
-    }
   }
 
   function drawPreview() {
     if (tool === 'platform') {
       ctx.fillStyle = '#228B22';
       ctx.fillRect(mouseX, mouseY, 100, 20);
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(mouseX, mouseY, 100, 20); // Outline
     }
     if (tool === 'spike') {
       ctx.fillStyle = '#FF4500';
       ctx.fillRect(mouseX, mouseY, 30, 30);
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(mouseX, mouseY, 30, 30); // Outline
     }
     if (tool === 'lava') {
       ctx.fillStyle = 'red';
       ctx.fillRect(mouseX, mouseY, 100, 20);
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(mouseX, mouseY, 100, 20); // Outline
     }
     if (tool === 'enemy') {
       ctx.fillStyle = 'orange';
       ctx.fillRect(mouseX, mouseY, 30, 30);
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(mouseX, mouseY, 30, 30); // Outline
     }
   }
 
