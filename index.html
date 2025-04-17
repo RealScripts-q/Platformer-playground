@@ -111,7 +111,8 @@
     let isMouseDown = false;
 
     const levels = [];
-    for (let i = 0; i < 10; i++) {
+    const initialLevels = 10;
+    for (let i = 0; i < initialLevels; i++) {
       levels.push({
         platforms: [],
         spikes: [],
@@ -119,12 +120,12 @@
         nextBlocks: [],
         spawnPoint: { x: 100, y: 600 }
       });
-    }
+    });
     let currentLevel = 0;
 
     function createLevelButtons() {
       const levelBtns = document.getElementById('levelButtons');
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < levels.length; i++) {
         const btn = document.createElement('button');
         btn.textContent = `Level ${i + 1}`;
         btn.className = 'level-btn';
@@ -266,19 +267,6 @@
             player.y = p.y - player.height;
             player.vy = 0;
             player.grounded = true;
-          }
-        }
-
-        if (player.x < p.x + p.width && player.x + player.width > p.x) {
-          if (player.y < p.y + p.height && player.y + player.height > p.y) {
-            if (player.vy > 0) {
-              player.y = p.y - player.height;
-              player.vy = 0;
-            }
-            if (player.vy < 0) {
-              player.y = p.y + p.height;
-              player.vy = 0;
-            }
           }
         }
       }
