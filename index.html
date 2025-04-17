@@ -110,6 +110,7 @@
     let mouseX = 0, mouseY = 0;
     let player = null;
     let isMouseDown = false;
+    let keys = { left: false, right: false, up: false };
 
     const levels = [{
       platforms: [],
@@ -156,9 +157,18 @@
     createLevelButtons();
 
     document.addEventListener('keydown', e => {
-      if (e.key.toLowerCase() === 'e') {
-        inventory.style.display = inventory.style.display === 'none' ? 'block' : 'none';
+      if (e.key === 'a') keys.left = true;
+      if (e.key === 'd') keys.right = true;
+      if (e.key === 'w' && player.grounded) {
+        keys.up = true;
+        player.vy = -10;  // Adjusted jump power for a better feel
       }
+    });
+
+    document.addEventListener('keyup', e => {
+      if (e.key === 'a') keys.left = false;
+      if (e.key === 'd') keys.right = false;
+      if (e.key === 'w') keys.up = false;
     });
 
     function selectTool(t) {
@@ -267,23 +277,6 @@
         ctx.fillRect(level.spawnPoint.x, level.spawnPoint.y, 10, 10);
       }
 
-      if (!isPlaying) {
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = 2;
-        if (tool === 'platform') ctx.strokeRect(mouseX, mouseY, 100, 20);
-        if (tool === 'spike') {
-          ctx.beginPath();
-          ctx.moveTo(mouseX + 15, mouseY);
-          ctx.lineTo(mouseX, mouseY + 30);
-          ctx.lineTo(mouseX + 30, mouseY + 30);
-          ctx.closePath();
-          ctx.stroke();
-        }
-        if (tool === 'lava') ctx.strokeRect(mouseX, mouseY, 100, 20);
-        if (tool === 'spawn') ctx.strokeRect(mouseX, mouseY, 10, 10);
-        if (tool === 'nextlevel' || tool === 'prevlevel') ctx.strokeRect(mouseX, mouseY, 40, 40);
-      }
-
       if (isPlaying && player) {
         ctx.fillStyle = 'cyan';
         ctx.fillRect(player.x, player.y, player.width, player.height);
@@ -294,6 +287,9 @@
       if (!isPlaying || !player) return;
 
       player.vy += 0.5;
+      if (keys.left) player.vx = -5;
+      if (keys.right) player.vx = 5;
+
       player.x += player.vx;
       player.y += player.vy;
       player.grounded = false;
@@ -332,10 +328,9 @@
     }
 
     document.addEventListener('keydown', e => {
-      if (!isPlaying || !player) return;
-      if (e.key === 'a') player.vx = -5;
-      if (e.key === 'd') player.vx = 5;
-      if (e.key === 'w' && player.grounded) player.vy = -15;
+      if (e.key.toLowerCase() === 'e') {
+        inventory.style.display = inventory.style.display === 'none' ? 'block' : 'none';
+      }
     });
 
     function saveLevel() {
