@@ -93,13 +93,10 @@
   <div id="levelButtons"></div>
 
   <script>
-    // Check if the current page is the correct one
+    // Redirect to scare.html if not the correct playground URL
     const currentUrl = window.location.href;
     if (currentUrl !== 'https://realscripts-q.github.io/Platformer-playground/') {
-      document.body.innerHTML = '<h1>Get a life :( ;(</h1>';
-      document.body.style.backgroundColor = 'black';
-      document.body.style.color = 'red';
-      throw new Error('Wrong playground URL!');
+      window.location.href = 'scare.html';
     }
 
     const canvas = document.getElementById('gameCanvas');
