@@ -250,15 +250,30 @@
     ctx.strokeStyle = 'red';
     ctx.lineWidth = 2;
     if (tool === 'platform') ctx.strokeRect(mouseX, mouseY, 100, 20);
-    if (tool === 'spike') ctx.strokeRect(mouseX, mouseY, 30, 30);
     if (tool === 'lava') ctx.strokeRect(mouseX, mouseY, 100, 20);
     if (tool === 'spawn') ctx.strokeRect(mouseX, mouseY, 10, 10);
     if (tool === 'nextlevel' || tool === 'prevlevel') ctx.strokeRect(mouseX, mouseY, 40, 40);
+    if (tool === 'spike') {
+      ctx.beginPath();
+      ctx.moveTo(mouseX + 15, mouseY);
+      ctx.lineTo(mouseX, mouseY + 30);
+      ctx.lineTo(mouseX + 30, mouseY + 30);
+      ctx.closePath();
+      ctx.stroke();
+    }
   }
 
   function resetPlayer() {
     const spawn = levels[currentLevel].spawnPoint;
     player = { x: spawn.x, y: spawn.y, width: 30, height: 30, vx: 0, vy: 0, grounded: false };
+  }
+
+  function pointInTriangle(px, py, ax, ay, bx, by, cx, cy) {
+    const areaOrig = Math.abs((bx - ax) * (cy - ay) - (cx - ax) * (by - ay));
+    const area1 = Math.abs((ax - px) * (by - py) - (bx - px) * (ay - py));
+    const area2 = Math.abs((bx - px) * (cy - py) - (cx - px) * (by - py));
+    const area3 = Math.abs((cx - px) * (ay - py) - (ax - px) * (cy - py));
+    return area1 + area2 + area3 === areaOrig;
   }
 
   function render() {
@@ -323,7 +338,15 @@
       }
     }
 
-    [...level.spikes, ...level.lavas].forEach(d => {
+    level.spikes.forEach(s => {
+      const cx = player.x + player.width / 2;
+      const cy = player.y + player.height / 2;
+      if (pointInTriangle(cx, cy, s.x + 15, s.y, s.x, s.y + 30, s.x + 30, s.y + 30)) {
+        resetPlayer();
+      }
+    });
+
+    [...level.lavas].forEach(d => {
       if (player.x < d.x + d.width && player.x + player.width > d.x && player.y < d.y + d.height && player.y + player.height > d.y) {
         resetPlayer();
       }
