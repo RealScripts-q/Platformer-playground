@@ -1,113 +1,159 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Feedback</title>
-  <script type="text/javascript" src="https://cdn.emailjs.com/dist/email.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feedback Form</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f9;
-      padding: 20px;
-    }
-    .container {
-      max-width: 500px;
-      margin: 0 auto;
-      padding: 20px;
-      background-color: white;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      border-radius: 8px;
-    }
-    .form-group {
-      margin-bottom: 15px;
-    }
-    label {
-      font-weight: bold;
-    }
-    input[type="text"], textarea {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+    * {
+      margin: 0;
+      padding: 0;
       box-sizing: border-box;
     }
+
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f4f7fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .container {
+      text-align: center;
+      padding: 20px;
+      background-color: rgba(0, 0, 0, 0.7);
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.7);
+      width: 400px;
+      position: absolute;
+      z-index: 2;
+      color: white;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-bottom: 20px;
+    }
+
+    .form-container {
+      margin-bottom: 20px;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      border: 2px solid #ddd;
+    }
+
     button {
+      padding: 10px 20px;
       background-color: #4CAF50;
       color: white;
-      padding: 10px 20px;
       border: none;
-      border-radius: 4px;
+      border-radius: 5px;
+      font-size: 16px;
       cursor: pointer;
     }
+
     button:hover {
       background-color: #45a049;
     }
-    .message {
-      margin-top: 15px;
+
+    .thank-you-message {
+      font-size: 18px;
+      color: #4CAF50;
       font-weight: bold;
-      color: green;
+      display: none;
     }
+
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h2>Feedback Form</h2>
-    <form id="feedback-form">
-      <div class="form-group">
-        <label for="name">Your Name:</label>
-        <input type="text" id="name" name="name" required />
-      </div>
-      <div class="form-group">
-        <label for="email">Your Email:</label>
-        <input type="text" id="email" name="email" required />
-      </div>
-      <div class="form-group">
-        <label for="feedback">Your Feedback:</label>
-        <textarea id="feedback" name="feedback" rows="4" required></textarea>
-      </div>
-      <button type="submit">Submit Feedback</button>
-    </form>
-    <div class="message" id="responseMessage"></div>
+    <h1>We Value Your Feedback!</h1>
+    <div class="form-container">
+      <input id="name" type="text" placeholder="Your Name" required>
+      <input id="email" type="email" placeholder="Your Email" required>
+      <textarea id="feedback" rows="5" placeholder="Leave your feedback..."></textarea>
+      <button id="submitFeedbackBtn">Submit Feedback</button>
+    </div>
+    <div id="thankYouMessage" class="thank-you-message"></div>
   </div>
 
   <script>
-    // Initialize EmailJS
-    emailjs.init('la276jykBfI0UXQ5B'); // Use your public key here
+    // Function to load all feedback from localStorage and log to the console
+    function loadFeedback() {
+      const savedFeedback = JSON.parse(localStorage.getItem('feedbackList')) || [];
+      if (savedFeedback.length > 0) {
+        console.log("Feedback from previous submissions:");
+        savedFeedback.forEach((feedback, index) => {
+          console.log(`Feedback #${index + 1}`);
+          console.log(`Name: ${feedback.name}`);
+          console.log(`Email: ${feedback.email}`);
+          console.log(`Feedback: ${feedback.feedbackText}`);
+        });
+      } else {
+        console.log("No previous feedback found.");
+      }
+    }
 
-    // Get the form and response message elements
-    const form = document.getElementById('feedback-form');
-    const responseMessage = document.getElementById('responseMessage');
-
-    // Handle the form submission
-    form.addEventListener('submit', function(event) {
-      event.preventDefault();
-
+    // Function to submit feedback
+    function submitFeedback() {
       const name = document.getElementById('name').value;
       const email = document.getElementById('email').value;
-      const feedback = document.getElementById('feedback').value;
+      const feedbackText = document.getElementById('feedback').value;
 
-      // Prepare the data to be sent to the template
-      const templateParams = {
-        user_name: name,
-        user_email: email,
-        feedback_message: feedback
-      };
+      if (name.trim() && email.trim() && feedbackText.trim()) {
+        // Create feedback object
+        const feedback = {
+          name: name,
+          email: email,
+          feedbackText: feedbackText
+        };
 
-      // Send feedback using EmailJS
-      emailjs.send('service_qh6y4yl', 'template_azywdzd', templateParams)
-        .then(function(response) {
-          console.log('SUCCESS!', response);
-          responseMessage.innerText = 'Thank you for your feedback! We appreciate your input.';
-        }, function(error) {
-          console.log('FAILED...', error);
-          responseMessage.innerText = 'Oops! Something went wrong, please try again.';
-        });
+        // Retrieve existing feedback list from localStorage or initialize as empty array
+        const savedFeedback = JSON.parse(localStorage.getItem('feedbackList')) || [];
 
-      // Clear the form
-      form.reset();
-    });
+        // Add the new feedback to the list
+        savedFeedback.push(feedback);
+
+        // Save updated feedback list back to localStorage
+        localStorage.setItem('feedbackList', JSON.stringify(savedFeedback));
+
+        // Log feedback to the console with a custom message
+        console.log(`Feedback Submitted:`);
+        console.log(`Name: ${name}`);
+        console.log(`Email: ${email}`);
+        console.log(`Feedback: ${feedbackText}`);
+
+        // Show a "Thank you" message to the user
+        const thankYouMessage = document.getElementById('thankYouMessage');
+        thankYouMessage.innerText = 'Thank you for your feedback! It has been saved.';
+        thankYouMessage.style.display = 'block';
+
+        // Optionally, clear the form fields
+        document.getElementById('name').value = '';
+        document.getElementById('email').value = '';
+        document.getElementById('feedback').value = '';
+      } else {
+        console.log('Please fill out all fields before submitting.');
+      }
+    }
+
+    // Event listener for the feedback button
+    document.getElementById('submitFeedbackBtn').addEventListener('click', submitFeedback);
+
+    // Load feedback from localStorage when the page is loaded
+    window.onload = loadFeedback;
+
   </script>
 
 </body>
