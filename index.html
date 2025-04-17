@@ -93,7 +93,6 @@
   <div id="levelButtons"></div>
 
   <script>
-    // Redirect to scare.html if not the correct playground URL
     const currentUrl = window.location.href;
     if (currentUrl !== 'https://realscripts-q.github.io/Platformer-playground/') {
       window.location.href = 'scare.html';
@@ -110,22 +109,20 @@
     let player = null;
     let isMouseDown = false;
 
-    const levels = [];
-    const initialLevels = 10;
-    for (let i = 0; i < initialLevels; i++) {
-      levels.push({
-        platforms: [],
-        spikes: [],
-        lavas: [],
-        nextBlocks: [],
-        spawnPoint: { x: 100, y: 600 }
-      });
+    let levels = [];
+    levels.push({
+      platforms: [],
+      spikes: [],
+      lavas: [],
+      nextBlocks: [],
+      spawnPoint: { x: 100, y: 600 }
     });
     let currentLevel = 0;
 
     function createLevelButtons() {
       const levelBtns = document.getElementById('levelButtons');
-      for (let i = 0; i < levels.length; i++) {
+      levelBtns.innerHTML = ''; // Clear previous level buttons
+      levels.forEach((_, i) => {
         const btn = document.createElement('button');
         btn.textContent = `Level ${i + 1}`;
         btn.className = 'level-btn';
@@ -134,7 +131,7 @@
           render();
         };
         levelBtns.appendChild(btn);
-      }
+      });
     }
     createLevelButtons();
 
@@ -345,7 +342,8 @@
             const data = localStorage.getItem(key);
             if (data) {
               const parsedData = JSON.parse(data);
-              levels.splice(0, levels.length, ...parsedData);
+              levels = parsedData;
+              currentLevel = 0; // Reset to first level after loading
               render();
               alert(`Level set "${name}" loaded!`);
             }
