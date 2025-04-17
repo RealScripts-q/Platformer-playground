@@ -82,6 +82,7 @@
     <div class="inv-item" onclick="selectTool('prevlevel')">Previous Level</div>
     <div class="inv-item" onclick="selectTool('delete')">Delete</div>
     <div class="inv-item" onclick="togglePlayMode()">Play</div>
+    <div class="inv-item" onclick="toggleStopMode()">Stop</div>
     <div class="inv-item" onclick="saveLevel()">Save</div>
     <div class="inv-item" onclick="loadLevel()">Load</div>
   </div>
@@ -116,7 +117,8 @@
       lavas: [],
       nextBlocks: [],
       prevBlocks: [],
-      spawnPoint: { x: 100, y: 600 }
+      spawnPoint: { x: 100, y: 600 },
+      showTransitions: true
     }];
     let currentLevel = 0;
 
@@ -134,6 +136,7 @@
         newLevel.lavas = [];
         newLevel.nextBlocks = [];
         newLevel.prevBlocks = [];
+        newLevel.showTransitions = true;
         levels.push(newLevel);
         createLevelButtons();
       };
@@ -163,9 +166,15 @@
     }
 
     function togglePlayMode() {
-      isPlaying = !isPlaying;
+      isPlaying = true;
+      levels.forEach(lvl => lvl.showTransitions = false);
       document.getElementById('loadMenu').style.display = 'none';
-      if (isPlaying) resetPlayer();
+      resetPlayer();
+    }
+
+    function toggleStopMode() {
+      isPlaying = false;
+      levels.forEach(lvl => lvl.showTransitions = true);
     }
 
     canvas.addEventListener('mousemove', e => {
@@ -229,15 +238,17 @@
         ctx.fillRect(l.x, l.y, l.width, l.height);
       });
 
-      level.nextBlocks.forEach(n => {
-        ctx.fillStyle = 'purple';
-        ctx.fillRect(n.x, n.y, n.width, n.height);
-      });
+      if (level.showTransitions) {
+        level.nextBlocks.forEach(n => {
+          ctx.fillStyle = 'purple';
+          ctx.fillRect(n.x, n.y, n.width, n.height);
+        });
 
-      level.prevBlocks.forEach(p => {
-        ctx.fillStyle = 'blue';
-        ctx.fillRect(p.x, p.y, p.width, p.height);
-      });
+        level.prevBlocks.forEach(p => {
+          ctx.fillStyle = 'blue';
+          ctx.fillRect(p.x, p.y, p.width, p.height);
+        });
+      }
 
       ctx.fillStyle = '#FFD700';
       ctx.fillRect(level.spawnPoint.x, level.spawnPoint.y, 10, 10);
