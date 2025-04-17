@@ -40,22 +40,19 @@
     .inv-item:hover {
       background: #444;
     }
-    #levelControls {
+    #levelButtons {
       position: absolute;
       top: 10px;
       left: 10px;
       z-index: 3;
     }
-    .level-btn, .create-level-btn {
+    .level-btn {
       margin: 2px;
       padding: 5px 10px;
       background: #333;
       color: white;
       border: 1px solid #555;
       cursor: pointer;
-    }
-    .create-level-btn {
-      background: #006400;
     }
     #loadMenu {
       display: none;
@@ -82,6 +79,7 @@
     <div class="inv-item" onclick="selectTool('lava')">Lava</div>
     <div class="inv-item" onclick="selectTool('spawn')">Spawn</div>
     <div class="inv-item" onclick="selectTool('nextlevel')">Next Level</div>
+    <div class="inv-item" onclick="selectTool('prevlevel')">Previous Level</div>
     <div class="inv-item" onclick="selectTool('delete')">Delete</div>
     <div class="inv-item" onclick="togglePlayMode()">Play</div>
     <div class="inv-item" onclick="saveLevel()">Save</div>
@@ -93,12 +91,14 @@
     <div id="savedList" style="margin-top:5px;"></div>
   </div>
 
-  <div id="levelControls">
-    <button class="create-level-btn" onclick="createLevel(0)">Create Level</button>
-    <span id="levelButtons"></span>
-  </div>
+  <div id="levelButtons"></div>
 
   <script>
+    const currentUrl = window.location.href;
+    if (!currentUrl.startsWith('https://realscripts-q.github.io/Platformer-playground/')) {
+      window.location.href = 'scare.html';
+    }
+
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const inventory = document.getElementById('inventory');
@@ -109,20 +109,36 @@
     let mouseX = 0, mouseY = 0;
     let player = null;
     let isMouseDown = false;
-    let levels = [];
-    let currentLevel = 0;
 
-    levels.push({
+    const levels = [{
       platforms: [],
       spikes: [],
       lavas: [],
       nextBlocks: [],
+      prevBlocks: [],
       spawnPoint: { x: 100, y: 600 }
-    });
+    }];
+    let currentLevel = 0;
 
     function createLevelButtons() {
-      const container = document.getElementById('levelButtons');
-      container.innerHTML = '';
+      const levelBtns = document.getElementById('levelButtons');
+      levelBtns.innerHTML = '';
+
+      const createBtn = document.createElement('button');
+      createBtn.textContent = '➕ Create Level';
+      createBtn.className = 'level-btn';
+      createBtn.onclick = () => {
+        const newLevel = structuredClone(levels[0]);
+        newLevel.platforms = [];
+        newLevel.spikes = [];
+        newLevel.lavas = [];
+        newLevel.nextBlocks = [];
+        newLevel.prevBlocks = [];
+        levels.push(newLevel);
+        createLevelButtons();
+      };
+      levelBtns.appendChild(createBtn);
+
       levels.forEach((_, i) => {
         const btn = document.createElement('button');
         btn.textContent = `Level ${i + 1}`;
@@ -131,18 +147,16 @@
           currentLevel = i;
           render();
         };
-        container.appendChild(btn);
+        levelBtns.appendChild(btn);
       });
     }
+    createLevelButtons();
 
-    function createLevel(fromIndex) {
-      const base = levels[fromIndex];
-      const newLevel = JSON.parse(JSON.stringify(base));
-      levels.push(newLevel);
-      createLevelButtons();
-      currentLevel = levels.length - 1;
-      render();
-    }
+    document.addEventListener('keydown', e => {
+      if (e.key.toLowerCase() === 'e') {
+        inventory.style.display = inventory.style.display === 'none' ? 'block' : 'none';
+      }
+    });
 
     function selectTool(t) {
       tool = t;
@@ -161,8 +175,12 @@
       if (isMouseDown && !isPlaying) placeOrDeleteBlock();
     });
 
-    canvas.addEventListener('mousedown', () => { isMouseDown = true; if (!isPlaying) placeOrDeleteBlock(); });
-    canvas.addEventListener('mouseup', () => { isMouseDown = false; });
+    canvas.addEventListener('mousedown', () => {
+      isMouseDown = true;
+      if (!isPlaying) placeOrDeleteBlock();
+    });
+
+    canvas.addEventListener('mouseup', () => isMouseDown = false);
 
     function placeOrDeleteBlock() {
       const level = levels[currentLevel];
@@ -171,8 +189,9 @@
       if (tool === 'lava') level.lavas.push({ x: mouseX, y: mouseY, width: 100, height: 20 });
       if (tool === 'spawn') level.spawnPoint = { x: mouseX, y: mouseY };
       if (tool === 'nextlevel') level.nextBlocks.push({ x: mouseX, y: mouseY, width: 40, height: 40 });
+      if (tool === 'prevlevel') level.prevBlocks.push({ x: mouseX, y: mouseY, width: 40, height: 40 });
       if (tool === 'delete') {
-        ['platforms', 'spikes', 'lavas', 'nextBlocks'].forEach(type => {
+        ['platforms', 'spikes', 'lavas', 'nextBlocks', 'prevBlocks'].forEach(type => {
           level[type] = level[type].filter(obj => !(mouseX >= obj.x && mouseX <= obj.x + obj.width && mouseY >= obj.y && mouseY <= obj.y + obj.height));
         });
       }
@@ -197,13 +216,31 @@
     function render() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const level = levels[currentLevel];
-      level.platforms.forEach(p => { ctx.fillStyle = '#228B22'; ctx.fillRect(p.x, p.y, p.width, p.height); });
+
+      level.platforms.forEach(p => {
+        ctx.fillStyle = '#228B22';
+        ctx.fillRect(p.x, p.y, p.width, p.height);
+      });
+
       level.spikes.forEach(drawSpike);
-      level.lavas.forEach(l => { ctx.fillStyle = 'red'; ctx.fillRect(l.x, l.y, l.width, l.height); });
-      level.nextBlocks.forEach(n => { ctx.fillStyle = 'purple'; ctx.fillRect(n.x, n.y, n.width, n.height); });
-      const spawn = level.spawnPoint;
+
+      level.lavas.forEach(l => {
+        ctx.fillStyle = 'red';
+        ctx.fillRect(l.x, l.y, l.width, l.height);
+      });
+
+      level.nextBlocks.forEach(n => {
+        ctx.fillStyle = 'purple';
+        ctx.fillRect(n.x, n.y, n.width, n.height);
+      });
+
+      level.prevBlocks.forEach(p => {
+        ctx.fillStyle = 'blue';
+        ctx.fillRect(p.x, p.y, p.width, p.height);
+      });
+
       ctx.fillStyle = '#FFD700';
-      ctx.fillRect(spawn.x, spawn.y, 10, 10);
+      ctx.fillRect(level.spawnPoint.x, level.spawnPoint.y, 10, 10);
 
       if (!isPlaying) {
         ctx.strokeStyle = 'white';
@@ -219,7 +256,7 @@
         }
         if (tool === 'lava') ctx.strokeRect(mouseX, mouseY, 100, 20);
         if (tool === 'spawn') ctx.strokeRect(mouseX, mouseY, 10, 10);
-        if (tool === 'nextlevel') ctx.strokeRect(mouseX, mouseY, 40, 40);
+        if (tool === 'nextlevel' || tool === 'prevlevel') ctx.strokeRect(mouseX, mouseY, 40, 40);
       }
 
       if (isPlaying && player) {
@@ -230,19 +267,19 @@
 
     function update() {
       if (!isPlaying || !player) return;
+
       player.vy += 0.5;
       player.x += player.vx;
       player.y += player.vy;
       player.grounded = false;
+
       const level = levels[currentLevel];
 
       for (const p of level.platforms) {
-        if (player.x < p.x + p.width && player.x + player.width > p.x) {
-          if (player.y + player.height > p.y && player.y + player.height <= p.y + player.vy) {
-            player.y = p.y - player.height;
-            player.vy = 0;
-            player.grounded = true;
-          }
+        if (player.x < p.x + p.width && player.x + player.width > p.x && player.y + player.height > p.y && player.y + player.height <= p.y + player.vy) {
+          player.y = p.y - player.height;
+          player.vy = 0;
+          player.grounded = true;
         }
       }
 
@@ -252,20 +289,24 @@
         }
       });
 
-      for (const n of level.nextBlocks) {
+      level.nextBlocks.forEach(n => {
         if (player.x < n.x + n.width && player.x + player.width > n.x && player.y < n.y + n.height && player.y + player.height > n.y) {
           currentLevel = Math.min(currentLevel + 1, levels.length - 1);
           resetPlayer();
         }
-      }
+      });
+
+      level.prevBlocks.forEach(p => {
+        if (player.x < p.x + p.width && player.x + player.width > p.x && player.y < p.y + p.height && player.y + player.height > p.y) {
+          currentLevel = Math.max(currentLevel - 1, 0);
+          resetPlayer();
+        }
+      });
 
       if (player.y > canvas.height) resetPlayer();
     }
 
     document.addEventListener('keydown', e => {
-      if (e.key.toLowerCase() === 'e') {
-        inventory.style.display = inventory.style.display === 'none' ? 'block' : 'none';
-      }
       if (!isPlaying || !player) return;
       if (e.key === 'a') player.vx = -3;
       if (e.key === 'd') player.vx = 3;
@@ -286,7 +327,8 @@
     }
 
     function loadLevel() {
-      document.getElementById('loadMenu').style.display = 'block';
+      const menu = document.getElementById('loadMenu');
+      menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
       updateSavedList();
     }
 
@@ -295,37 +337,47 @@
       savedList.innerHTML = '';
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key.startsWith("platformerLevels_")) {
+        if (key.startsWith('platformerLevels_')) {
+          const name = key.replace('platformerLevels_', '');
           const item = document.createElement('div');
+          item.textContent = name;
           item.className = 'inv-item';
-          item.textContent = key.replace("platformerLevels_", "");
-          item.onmousedown = e => {
-            if (e.button === 2) {
-              if (confirm("Delete this saved level set?")) {
+
+          let holdTimer;
+
+          item.onmousedown = () => {
+            holdTimer = setTimeout(() => {
+              const confirmed = confirm(`Delete saved level "${name}"?`);
+              if (confirmed) {
                 localStorage.removeItem(key);
                 updateSavedList();
               }
-            } else {
-              const data = localStorage.getItem(key);
-              levels = JSON.parse(data);
-              currentLevel = 0;
+            }, 1500);
+          };
+
+          item.onmouseup = () => clearTimeout(holdTimer);
+          item.onmouseleave = () => clearTimeout(holdTimer);
+
+          item.onclick = () => {
+            const data = localStorage.getItem(key);
+            if (data) {
+              const parsedData = JSON.parse(data);
+              levels.splice(0, levels.length, ...parsedData);
               createLevelButtons();
               render();
+              alert(`Level set "${name}" loaded!`);
             }
           };
+
           savedList.appendChild(item);
         }
       }
     }
 
-    function run() {
+    setInterval(() => {
       update();
       render();
-      requestAnimationFrame(run);
-    }
-
-    createLevelButtons();
-    run();
+    }, 1000 / 60);
   </script>
 </body>
 </html>
