@@ -80,10 +80,8 @@
   <div class="inv-item" onclick="selectTool('spawn')">Spawn</div>
   <div class="inv-item" onclick="selectTool('nextlevel')">Next Level</div>
   <div class="inv-item" onclick="selectTool('prevlevel')">Previous Level</div>
-  <div class="inv-item" onclick="selectTool('collectible')">Collectible</div>
-  <div class="inv-item" onclick="selectTool('key')">Key</div>
-  <div class="inv-item" onclick="selectTool('enemy')">Enemy</div>
   <div class="inv-item" onclick="selectTool('delete')">Delete</div>
+  <div class="inv-item" onclick="selectTool('enemy')">Enemy</div> <!-- New Enemy Tool -->
   <div class="inv-item" onclick="togglePlayMode()">Play</div>
   <div class="inv-item" onclick="toggleStopMode()">Stop</div>
   <div class="inv-item" onclick="saveLevel()">Save</div>
@@ -112,6 +110,7 @@
   let isPlaying = false;
   let mouseX = 0, mouseY = 0;
   let player = null;
+  let enemies = []; // Array to hold enemies
   let isMouseDown = false;
   let keys = { left: false, right: false, up: false };
 
@@ -122,9 +121,7 @@
     nextBlocks: [],
     prevBlocks: [],
     spawnPoint: { x: 100, y: 600 },
-    collectibles: [],
-    keys: [],
-    enemies: [],
+    enemies: [], // Store enemies for each level
     showTransitions: true
   }];
   let currentLevel = 0;
@@ -143,8 +140,6 @@
       newLevel.lavas = [];
       newLevel.nextBlocks = [];
       newLevel.prevBlocks = [];
-      newLevel.collectibles = [];
-      newLevel.keys = [];
       newLevel.enemies = [];
       newLevel.spawnPoint.hidden = false;
       newLevel.showTransitions = true;
@@ -231,48 +226,18 @@
     if (tool === 'spawn') level.spawnPoint = { x: mouseX, y: mouseY };
     if (tool === 'nextlevel') level.nextBlocks.push({ x: mouseX, y: mouseY, width: 40, height: 40 });
     if (tool === 'prevlevel') level.prevBlocks.push({ x: mouseX, y: mouseY, width: 40, height: 40 });
-    if (tool === 'collectible') level.collectibles.push({ x: mouseX, y: mouseY, width: 20, height: 20 });
-    if (tool === 'key') level.keys.push({ x: mouseX, y: mouseY, width: 20, height: 20 });
-    if (tool === 'enemy') level.enemies.push({ x: mouseX, y: mouseY, width: 30, height: 30 });
+    if (tool === 'enemy') level.enemies.push({ x: mouseX, y: mouseY, width: 30, height: 30, speed: 1 }); // Adding enemy tool
     if (tool === 'delete') {
-      ['platforms', 'spikes', 'lavas', 'collectibles', 'keys', 'enemies', 'nextBlocks', 'prevBlocks'].forEach(type => {
+      ['platforms', 'spikes', 'lavas', 'nextBlocks', 'prevBlocks', 'enemies'].forEach(type => {
         level[type] = level[type].filter(obj => !(mouseX >= obj.x && mouseX <= obj.x + obj.width && mouseY >= obj.y && mouseY <= obj.y + obj.height));
       });
     }
     render();
   }
 
-  function drawSpike(s) {
-    ctx.fillStyle = 'orangered';
-    ctx.beginPath();
-    ctx.moveTo(s.x + s.width / 2, s.y);
-    ctx.lineTo(s.x, s.y + s.height);
-    ctx.lineTo(s.x + s.width, s.y + s.height);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.strokeStyle = 'red';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(s.x + s.width / 2, s.y);
-    ctx.lineTo(s.x, s.y + s.height);
-    ctx.lineTo(s.x + s.width, s.y + s.height);
-    ctx.closePath();
-    ctx.stroke();
-  }
-
-  function drawPreview() {
-    if (isPlaying || !tool) return;
-    ctx.strokeStyle = 'red';
-    ctx.lineWidth = 2;
-    if (tool === 'platform') ctx.strokeRect(mouseX, mouseY, 100, 20);
-    if (tool === 'spike') ctx.strokeRect(mouseX, mouseY, 30, 30);
-    if (tool === 'lava') ctx.strokeRect(mouseX, mouseY, 100, 20);
-    if (tool === 'spawn') ctx.strokeRect(mouseX, mouseY, 10, 10);
-    if (tool === 'nextlevel' || tool === 'prevlevel') ctx.strokeRect(mouseX, mouseY, 40, 40);
-    if (tool === 'collectible') ctx.strokeRect(mouseX, mouseY, 20, 20);
-    if (tool === 'key') ctx.strokeRect(mouseX, mouseY, 20, 20);
-    if (tool === 'enemy') ctx.strokeRect(mouseX, mouseY, 30, 30);
+  function drawEnemy(e) {
+    ctx.fillStyle = 'orange';
+    ctx.fillRect(e.x, e.y, e.width, e.height);
   }
 
   function resetPlayer() {
@@ -296,21 +261,6 @@
       ctx.fillRect(l.x, l.y, l.width, l.height);
     });
 
-    level.collectibles.forEach(c => {
-      ctx.fillStyle = 'yellow';
-      ctx.fillRect(c.x, c.y, c.width, c.height);
-    });
-
-    level.keys.forEach(k => {
-      ctx.fillStyle = 'gold';
-      ctx.fillRect(k.x, k.y, k.width, k.height);
-    });
-
-    level.enemies.forEach(e => {
-      ctx.fillStyle = 'red';
-      ctx.fillRect(e.x, e.y, e.width, e.height);
-    });
-
     if (level.showTransitions) {
       level.nextBlocks.forEach(n => {
         ctx.fillStyle = 'purple';
@@ -323,15 +273,120 @@
       });
     }
 
-    if (player) {
-      ctx.fillStyle = 'green';
+    if (!level.spawnPoint.hidden) {
+      ctx.fillStyle = '#FFD700';
+      ctx.fillRect(level.spawnPoint.x, level.spawnPoint.y, 10, 10);
+    }
+
+    if (isPlaying && player) {
+      ctx.fillStyle = 'cyan';
       ctx.fillRect(player.x, player.y, player.width, player.height);
     }
+
+    level.enemies.forEach(drawEnemy); // Draw enemies
 
     drawPreview();
   }
 
-  render();
+  function update() {
+    if (!isPlaying || !player) return;
+
+    player.vy += 0.5;
+    if (keys.left) player.vx = -5;
+    if (keys.right) player.vx = 5;
+
+    player.x += player.vx;
+    player.y += player.vy;
+    player.grounded = false;
+
+    const level = levels[currentLevel];
+
+    for (const p of level.platforms) {
+      if (player.x < p.x + p.width && player.x + player.width > p.x && player.y + player.height > p.y && player.y + player.height <= p.y + player.vy) {
+        player.y = p.y - player.height;
+        player.vy = 0;
+        player.grounded = true;
+      }
+    }
+
+    [...level.spikes, ...level.lavas].forEach(d => {
+      if (player.x < d.x + d.width && player.x + player.width > d.x && player.y < d.y + d.height && player.y + player.height > d.y) {
+        resetPlayer();
+      }
+    });
+
+    level.nextBlocks.forEach(n => {
+      if (player.x < n.x + n.width && player.x + player.width > n.x && player.y < n.y + n.height && player.y + player.height > n.y) {
+        currentLevel = Math.min(currentLevel + 1, levels.length - 1);
+        resetPlayer();
+      }
+    });
+
+    level.prevBlocks.forEach(p => {
+      if (player.x < p.x + p.width && player.x + player.width > p.x && player.y < p.y + p.height && player.y + player.height > p.y) {
+        currentLevel = Math.max(currentLevel - 1, 0);
+        resetPlayer();
+      }
+    });
+
+    level.enemies.forEach(enemy => {
+      // Enemy movement towards player
+      if (player.x > enemy.x) {
+        enemy.x += enemy.speed;
+      } else {
+        enemy.x -= enemy.speed;
+      }
+
+      // Check for collision with player
+      if (player.x < enemy.x + enemy.width && player.x + player.width > enemy.x && player.y < enemy.y + enemy.height && player.y + player.height > enemy.y) {
+        resetPlayer();
+      }
+    });
+
+    if (player.y > canvas.height) resetPlayer();
+  }
+
+  function saveLevel() {
+    const levelData = JSON.stringify(levels);
+    localStorage.setItem('savedLevels', levelData);
+  }
+
+  function loadLevel() {
+    const levelData = localStorage.getItem('savedLevels');
+    if (levelData) {
+      levels.length = 0;
+      levels.push(...JSON.parse(levelData));
+      createLevelButtons();
+      render();
+    }
+  }
+
+  function drawPreview() {
+    if (tool === 'platform') {
+      ctx.fillStyle = '#228B22';
+      ctx.fillRect(mouseX, mouseY, 100, 20);
+    }
+    if (tool === 'spike') {
+      ctx.fillStyle = '#FF4500';
+      ctx.fillRect(mouseX, mouseY, 30, 30);
+    }
+    if (tool === 'lava') {
+      ctx.fillStyle = 'red';
+      ctx.fillRect(mouseX, mouseY, 100, 20);
+    }
+    if (tool === 'enemy') {
+      ctx.fillStyle = 'orange';
+      ctx.fillRect(mouseX, mouseY, 30, 30);
+    }
+  }
+
+  function gameLoop() {
+    update();
+    render();
+    requestAnimationFrame(gameLoop);
+  }
+
+  gameLoop();
 </script>
 </body>
 </html>
