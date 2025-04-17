@@ -170,11 +170,23 @@
       levels.forEach(lvl => lvl.showTransitions = false);
       document.getElementById('loadMenu').style.display = 'none';
       resetPlayer();
+      hideSpawn();
     }
 
     function toggleStopMode() {
       isPlaying = false;
       levels.forEach(lvl => lvl.showTransitions = true);
+      showSpawn();
+    }
+
+    function hideSpawn() {
+      const level = levels[currentLevel];
+      level.spawnPoint.hidden = true;
+    }
+
+    function showSpawn() {
+      const level = levels[currentLevel];
+      level.spawnPoint.hidden = false;
     }
 
     canvas.addEventListener('mousemove', e => {
@@ -251,7 +263,9 @@
       }
 
       ctx.fillStyle = '#FFD700';
-      ctx.fillRect(level.spawnPoint.x, level.spawnPoint.y, 10, 10);
+      if (!level.spawnPoint.hidden) {
+        ctx.fillRect(level.spawnPoint.x, level.spawnPoint.y, 10, 10);
+      }
 
       if (!isPlaying) {
         ctx.strokeStyle = 'white';
@@ -319,76 +333,33 @@
 
     document.addEventListener('keydown', e => {
       if (!isPlaying || !player) return;
-      if (e.key === 'a') player.vx = -3;
-      if (e.key === 'd') player.vx = 3;
-      if (e.key === 'w' && player.grounded) player.vy = -10;
-    });
-
-    document.addEventListener('keyup', e => {
-      if (!isPlaying || !player) return;
-      if (e.key === 'a' || e.key === 'd') player.vx = 0;
+      if (e.key === 'a') player.vx = -5;
+      if (e.key === 'd') player.vx = 5;
+      if (e.key === 'w' && player.grounded) player.vy = -15;
     });
 
     function saveLevel() {
-      const name = prompt("Enter a name to save this level set:");
-      if (!name) return;
-      localStorage.setItem(`platformerLevels_${name}`, JSON.stringify(levels));
-      alert(`Levels saved as "${name}"`);
-      updateSavedList();
+      const levelData = JSON.stringify(levels);
+      localStorage.setItem('levels', levelData);
     }
 
     function loadLevel() {
-      const menu = document.getElementById('loadMenu');
-      menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
-      updateSavedList();
-    }
-
-    function updateSavedList() {
-      const savedList = document.getElementById('savedList');
-      savedList.innerHTML = '';
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key.startsWith('platformerLevels_')) {
-          const name = key.replace('platformerLevels_', '');
-          const item = document.createElement('div');
-          item.textContent = name;
-          item.className = 'inv-item';
-
-          let holdTimer;
-
-          item.onmousedown = () => {
-            holdTimer = setTimeout(() => {
-              const confirmed = confirm(`Delete saved level "${name}"?`);
-              if (confirmed) {
-                localStorage.removeItem(key);
-                updateSavedList();
-              }
-            }, 1500);
-          };
-
-          item.onmouseup = () => clearTimeout(holdTimer);
-          item.onmouseleave = () => clearTimeout(holdTimer);
-
-          item.onclick = () => {
-            const data = localStorage.getItem(key);
-            if (data) {
-              const parsedData = JSON.parse(data);
-              levels.splice(0, levels.length, ...parsedData);
-              createLevelButtons();
-              render();
-              alert(`Level set "${name}" loaded!`);
-            }
-          };
-
-          savedList.appendChild(item);
-        }
+      const levelData = localStorage.getItem('levels');
+      if (levelData) {
+        levels.length = 0;
+        levels.push(...JSON.parse(levelData));
+        createLevelButtons();
+        render();
       }
     }
 
-    setInterval(() => {
+    function run() {
       update();
       render();
-    }, 1000 / 60);
+      requestAnimationFrame(run);
+    }
+
+    run();
   </script>
 </body>
 </html>
