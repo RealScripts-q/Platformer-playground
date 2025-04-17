@@ -107,10 +107,34 @@
       z-index: 10000;
     }
 
-    #blue-loading {
-      margin-top: 20px;
-      font-size: 20px;
+    .loading-screen {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 24px;
       color: white;
+      text-align: center;
+      background-color: black;
+      padding: 10px;
+      border-radius: 10px;
+      width: 300px;
+    }
+
+    .loading-bar {
+      width: 100%;
+      height: 20px;
+      background-color: #ccc;
+      margin-top: 10px;
+      border-radius: 5px;
+    }
+
+    .loading-progress {
+      height: 100%;
+      width: 0;
+      background-color: #4caf50;
+      border-radius: 5px;
     }
   </style>
 </head>
@@ -120,24 +144,48 @@
 <div class="bloody-flicker"></div>
 <div class="request-popup">Requesting access to your face and voice...</div>
 
+<!-- Broken Screen Element -->
 <div class="broken-screen"></div>
 
+<!-- Blue Screen of Death Element -->
 <div class="blue-screen">
   <h1>STOP: SYSTEM ERROR</h1>
   <p>Your computer has encountered a serious error.</p>
   <p>Rebooting in progress...</p>
-  <p id="blue-loading">Loading: 0%</p>
+</div>
+
+<!-- Rebooting Loading Screen -->
+<div class="loading-screen">
+  <h2>Rebooting...</h2>
+  <p>Loading...</p>
+  <div class="loading-bar">
+    <div class="loading-progress"></div>
+  </div>
+  <p id="loading-number">0%</p>
 </div>
 
 <script>
   const scaryMessages = [
-    "DO YOU HEAR THAT?", "WHO'S BEHIND YOU?", "YOU SHOULDN'T BE HERE.",
-    "RUN WHILE YOU CAN.", "IT'S TOO LATE NOW.", "THEY'RE WATCHING.",
-    "YOU'VE BEEN MARKED.", "WE SEE EVERYTHING.", "NEVER ALONE.",
-    "WHY DID YOU CLICK?", "LOOK OUT THE WINDOW.", "DON'T MOVE.",
-    "SOMETHING IS WRONG.", "SHHH... LISTEN.", "ARE YOU SCARED YET?",
-    "JUST A LITTLE LONGER...", "NOTHING IS REAL.", "EVERYTHING IS GLITCHING.",
-    "IT KNOWS YOUR NAME.", "TURN AROUND."
+    "DO YOU HEAR THAT?",
+    "WHO'S BEHIND YOU?",
+    "YOU SHOULDN'T BE HERE.",
+    "RUN WHILE YOU CAN.",
+    "IT'S TOO LATE NOW.",
+    "THEY'RE WATCHING.",
+    "YOU'VE BEEN MARKED.",
+    "WE SEE EVERYTHING.",
+    "NEVER ALONE.",
+    "WHY DID YOU CLICK?",
+    "LOOK OUT THE WINDOW.",
+    "DON'T MOVE.",
+    "SOMETHING IS WRONG.",
+    "SHHH... LISTEN.",
+    "ARE YOU SCARED YET?",
+    "JUST A LITTLE LONGER...",
+    "NOTHING IS REAL.",
+    "EVERYTHING IS GLITCHING.",
+    "IT KNOWS YOUR NAME.",
+    "TURN AROUND."
   ];
 
   function createFloatingText() {
@@ -153,6 +201,7 @@
 
   setInterval(createFloatingText, 500);
 
+  // Optional: Add scary sound
   const audio = new Audio('https://www.fesliyanstudios.com/play-mp3/387');
   audio.loop = true;
   audio.volume = 0.3;
@@ -160,42 +209,104 @@
     console.log("User hasn't interacted yet, can't autoplay sound.");
   });
 
+  // Optional: Flash effect like camera flashes
   const flash = document.querySelector('.flash');
   setInterval(() => {
     flash.style.opacity = Math.random() < 0.1 ? '0.9' : '0';
-  }, 50);
+  }, 50); // Increased frequency for faster flashes
 
+  // Full-screen effect after 2 seconds
   setTimeout(() => {
-    if (document.documentElement.requestFullscreen) {
-      document.documentElement.requestFullscreen();
+    function enterFullscreen() {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen();
+      } else if (document.documentElement.mozRequestFullScreen) {
+        document.documentElement.mozRequestFullScreen();
+      } else if (document.documentElement.webkitRequestFullscreen) {
+        document.documentElement.webkitRequestFullscreen();
+      } else if (document.documentElement.msRequestFullscreen) {
+        document.documentElement.msRequestFullscreen();
+      }
     }
 
+    enterFullscreen(); // First attempt to go fullscreen
+
+    // Show the broken screen after full screen
     const brokenScreen = document.querySelector('.broken-screen');
     brokenScreen.style.display = 'block';
 
+    // Ensure the user cannot leave fullscreen mode
+    document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement) {
+        enterFullscreen(); // Force back into fullscreen mode if the user exits
+      }
+    });
+
+    // After 3 seconds, show the Blue Screen of Death
     setTimeout(() => {
       brokenScreen.style.display = 'none';
       const blueScreen = document.querySelector('.blue-screen');
-      const loadingText = document.getElementById('blue-loading');
       blueScreen.style.display = 'block';
 
-      // Simulate loading on the blue screen
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += 2;
-        loadingText.textContent = `Loading: ${progress}%`;
+      // Start loading screen simulation after blue screen
+      setTimeout(() => {
+        blueScreen.style.display = 'none';
+        const loadingScreen = document.querySelector('.loading-screen');
+        loadingScreen.style.display = 'block';
 
-        if (progress >= 100) {
-          clearInterval(interval);
-          setTimeout(() => {
-            window.location.reload(); // Simulate reboot
-          }, 1000);
-        }
-      }, 100);
-    }, 3000);
-  }, 10000);
+        // Simulate loading progress bar and percentage
+        let progress = 0;
+        const loadingProgress = document.querySelector('.loading-progress');
+        const loadingNumber = document.getElementById('loading-number');
+        
+        const interval = setInterval(() => {
+          progress += 1;
+          loadingProgress.style.width = progress + '%';
+          loadingNumber.innerText = progress + '%';
+
+          if (progress >= 100) {
+            clearInterval(interval);
+            setTimeout(() => {
+              window.location.reload(); // Simulate a reboot
+            }, 1000);
+          }
+        }, 3600); // Loading takes 1 hour (3600ms * 100 steps)
+      }, 3000); // Blue screen stays for 3 seconds
+    }, 3000); // Broken screen shows for 3 seconds
+
+  }, 2000); // Full screen after 2 seconds
+
+  // Prevent user interaction: reload on mouse move or tab switch
+  document.addEventListener('mousemove', () => {
+    location.reload();
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) location.reload();
+  });
+
+  // Block right-click and shortcuts
+  document.addEventListener('contextmenu', e => e.preventDefault());
+
+  document.addEventListener('keydown', function(e) {
+    if (
+      e.key === "F12" ||
+      (e.ctrlKey && e.shiftKey && e.key === "I") ||
+      (e.ctrlKey && e.key === "W") ||
+      (e.ctrlKey && e.shiftKey && e.key === "C") ||
+      (e.ctrlKey && e.shiftKey && e.key === "J") ||
+      (e.metaKey && e.key === "W")
+    ) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  });
+
+  // Block close/refresh attempts
+  window.onbeforeunload = function () {
+    return "You cannot leave this page.";
+  };
 </script>
 
 </body>
 </html>
-
