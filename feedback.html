@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Feedback</title>
+  <script type="text/javascript" src="https://cdn.emailjs.com/dist/email.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
+      padding: 20px;
+    }
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: white;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      font-weight: bold;
+    }
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .message {
+      margin-top: 15px;
+      font-weight: bold;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>Feedback Form</h2>
+    <form id="feedback-form">
+      <div class="form-group">
+        <label for="name">Your Name:</label>
+        <input type="text" id="name" name="name" required />
+      </div>
+      <div class="form-group">
+        <label for="email">Your Email:</label>
+        <input type="text" id="email" name="email" required />
+      </div>
+      <div class="form-group">
+        <label for="feedback">Your Feedback:</label>
+        <textarea id="feedback" name="feedback" rows="4" required></textarea>
+      </div>
+      <button type="submit">Submit Feedback</button>
+    </form>
+    <div class="message" id="responseMessage"></div>
+  </div>
+
+  <script>
+    // Initialize EmailJS
+    emailjs.init('la276jykBfI0UXQ5B'); // Use your public key here
+
+    // Get the form and response message elements
+    const form = document.getElementById('feedback-form');
+    const responseMessage = document.getElementById('responseMessage');
+
+    // Handle the form submission
+    form.addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+      const feedback = document.getElementById('feedback').value;
+
+      // Prepare the data to be sent to the template
+      const templateParams = {
+        user_name: name,
+        user_email: email,
+        feedback_message: feedback
+      };
+
+      // Send feedback using EmailJS
+      emailjs.send('service_qh6y4yl', 'template_azywdzd', templateParams)
+        .then(function(response) {
+          console.log('SUCCESS!', response);
+          responseMessage.innerText = 'Thank you for your feedback! We appreciate your input.';
+        }, function(error) {
+          console.log('FAILED...', error);
+          responseMessage.innerText = 'Oops! Something went wrong, please try again.';
+        });
+
+      // Clear the form
+      form.reset();
+    });
+  </script>
+
+</body>
+</html>
